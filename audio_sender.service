@@ -1,0 +1,21 @@
+[Unit]
+Description=FFmpeg Audio Sender (UDP)
+# Ensures the service waits until the sound system and network are available
+After=pulseaudio.service pipewire.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# This environment variable points FFmpeg to the correct audio session bus
+Environment=PULSE_SERVER=unix:/run/user/%U/pulse/native
+# Optional: Wait 5 seconds before starting to ensure the 'remote.monitor' is created
+ExecStartPre=/usr/bin/sleep 5
+# The main command
+ExecStart=/usr/bin/ffmpeg -f pulse -i remote.monitor -c:a aac -b:a 128k -f mpegts "udp://192.168.1.77:18181?pkt_size=1316"
+
+# Restart logic: if the network drops or FFmpeg crashes, it tries again in 5 seconds
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
